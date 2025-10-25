@@ -8,6 +8,3 @@ services:
     envVars:
       - key: PYTHONUNBUFFERED
         value: true
-    healthCheckPath: /
-    domains:
-      - microservices-dashboard.onrender.com

@@ -3,6 +3,57 @@ import requests
 import os
 from datetime import datetime
 
+# Mock data for when services are unavailable
+MOCK_USERS = [
+    {"id": 1, "name": "John Doe", "email": "john@example.com", "created_at": "2024-01-01"},
+    {"id": 2, "name": "Jane Smith", "email": "jane@example.com", "created_at": "2024-01-02"}
+]
+
+MOCK_ORDERS = [
+    {"id": 1, "user_id": 1, "product": "Laptop", "quantity": 1, "amount": 999.99, "status": "completed", "created_at": "2024-01-01"},
+    {"id": 2, "user_id": 2, "product": "Mouse", "quantity": 2, "amount": 49.99, "status": "pending", "created_at": "2024-01-02"}
+]
+
+# Configuration
+USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://localhost:5001')
+ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://localhost:5002')
+
+# Enhanced fetch functions with fallback
+def fetch_users():
+    try:
+        response = requests.get(f"{USER_SERVICE_URL}/api/users", timeout=5)
+        if response.status_code == 200:
+            return response.json().get('users', [])
+        return MOCK_USERS  # Fallback to mock data
+    except:
+        st.sidebar.warning("⚠️ User Service unavailable - using mock data")
+        return MOCK_USERS
+
+def fetch_orders():
+    try:
+        response = requests.get(f"{ORDER_SERVICE_URL}/api/orders", timeout=5)
+        if response.status_code == 200:
+            return response.json().get('orders', [])
+        return MOCK_ORDERS  # Fallback to mock data
+    except:
+        st.sidebar.warning("⚠️ Order Service unavailable - using mock data")
+        return MOCK_ORDERS
+
+# Enhanced service check
+def check_service(url, service_name):
+    try:
+        response = requests.get(f"{url}/health", timeout=5)
+        if response.status_code == 200:
+            st.sidebar.success(f"✅ {service_name}")
+            return True
+        else:
+            st.sidebar.error(f"❌ {service_name}")
+            return False
+    except:
+        st.sidebar.error(f"❌ {service_name}")
+        return False
+
+
 # Configuration - Use environment variables for Render
 USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://localhost:5001')
 ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://localhost:5002')

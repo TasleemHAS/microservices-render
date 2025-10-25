@@ -1,62 +1,19 @@
 import streamlit as st
-import requests
-import os
-from datetime import datetime
+import datetime
+import json
 
-# Mock data for when services are unavailable
-MOCK_USERS = [
-    {"id": 1, "name": "John Doe", "email": "john@example.com", "created_at": "2024-01-01"},
-    {"id": 2, "name": "Jane Smith", "email": "jane@example.com", "created_at": "2024-01-02"}
-]
+# Initialize session state for data storage
+if 'users' not in st.session_state:
+    st.session_state.users = [
+        {"id": 1, "name": "John Doe", "email": "john@example.com", "created_at": "2024-01-01"},
+        {"id": 2, "name": "Jane Smith", "email": "jane@example.com", "created_at": "2024-01-02"}
+    ]
 
-MOCK_ORDERS = [
-    {"id": 1, "user_id": 1, "product": "Laptop", "quantity": 1, "amount": 999.99, "status": "completed", "created_at": "2024-01-01"},
-    {"id": 2, "user_id": 2, "product": "Mouse", "quantity": 2, "amount": 49.99, "status": "pending", "created_at": "2024-01-02"}
-]
-
-# Configuration
-USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://localhost:5001')
-ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://localhost:5002')
-
-# Enhanced fetch functions with fallback
-def fetch_users():
-    try:
-        response = requests.get(f"{USER_SERVICE_URL}/api/users", timeout=5)
-        if response.status_code == 200:
-            return response.json().get('users', [])
-        return MOCK_USERS  # Fallback to mock data
-    except:
-        st.sidebar.warning("⚠️ User Service unavailable - using mock data")
-        return MOCK_USERS
-
-def fetch_orders():
-    try:
-        response = requests.get(f"{ORDER_SERVICE_URL}/api/orders", timeout=5)
-        if response.status_code == 200:
-            return response.json().get('orders', [])
-        return MOCK_ORDERS  # Fallback to mock data
-    except:
-        st.sidebar.warning("⚠️ Order Service unavailable - using mock data")
-        return MOCK_ORDERS
-
-# Enhanced service check
-def check_service(url, service_name):
-    try:
-        response = requests.get(f"{url}/health", timeout=5)
-        if response.status_code == 200:
-            st.sidebar.success(f"✅ {service_name}")
-            return True
-        else:
-            st.sidebar.error(f"❌ {service_name}")
-            return False
-    except:
-        st.sidebar.error(f"❌ {service_name}")
-        return False
-
-
-# Configuration - Use environment variables for Render
-USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://localhost:5001')
-ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://localhost:5002')
+if 'orders' not in st.session_state:
+    st.session_state.orders = [
+        {"id": 1, "user_id": 1, "product": "Laptop", "quantity": 1, "amount": 999.99, "status": "completed", "created_at": "2024-01-01"},
+        {"id": 2, "user_id": 2, "product": "Mouse", "quantity": 2, "amount": 49.99, "status": "pending", "created_at": "2024-01-02"}
+    ]
 
 st.set_page_config(
     page_title="Microservices Dashboard",
@@ -64,61 +21,20 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🏢 Microservices Dashboard - Deployed!")
-st.markdown("**Successfully deployed on Render.com** 🚀")
-
-# Add a small delay for services to start
-import time
-
-def fetch_users():
-    try:
-        response = requests.get(f"{USER_SERVICE_URL}/api/users", timeout=10)
-        if response.status_code == 200:
-            return response.json().get('users', [])
-        return []
-    except:
-        return []
-
-def fetch_orders():
-    try:
-        response = requests.get(f"{ORDER_SERVICE_URL}/api/orders", timeout=10)
-        if response.status_code == 200:
-            return response.json().get('orders', [])
-        return []
-    except:
-        return []
+st.title("🏢 Microservices Dashboard - Pure Streamlit!")
+st.success("✅ All services running in single Streamlit app")
 
 # Sidebar
 st.sidebar.header("Service Status")
-st.sidebar.info("All services running in single container")
+st.sidebar.success("✅ User Service (Integrated)")
+st.sidebar.success("✅ Order Service (Integrated)")
 
-# Check services with retry
-def check_service(url, service_name):
-    try:
-        response = requests.get(url, timeout=5)
-        if response.status_code == 200:
-            st.sidebar.success(f"✅ {service_name}")
-            return True
-        else:
-            st.sidebar.error(f"❌ {service_name}")
-            return False
-    except:
-        st.sidebar.error(f"❌ {service_name}")
-        return False
-
-# Wait a bit for services to start
-time.sleep(2)
-
-check_service(f"{USER_SERVICE_URL}/health", "User Service")
-check_service(f"{ORDER_SERVICE_URL}/health", "Order Service")
-
-# Helper function to display data as table without pandas
+# Helper functions
 def display_users_table(users):
     if not users:
         st.info("No users found")
         return
     
-    # Create a simple table using Streamlit's native functions
     st.write("### Users List")
     for user in users:
         with st.expander(f"👤 {user.get('name', 'Unknown')} (ID: {user.get('id', 'N/A')})"):
@@ -137,7 +53,6 @@ def display_orders_table(orders):
         st.info("No orders found")
         return
     
-    # Create a simple table using Streamlit's native functions
     st.write("### Orders List")
     for order in orders:
         with st.expander(f"📦 {order.get('product', 'Unknown')} (ID: {order.get('id', 'N/A')})"):
@@ -158,8 +73,7 @@ tab1, tab2, tab3 = st.tabs(["Users", "Orders", "Create New"])
 
 with tab1:
     st.header("Users Management")
-    users = fetch_users()
-    display_users_table(users)
+    display_users_table(st.session_state.users)
     
     # User actions
     st.subheader("User Actions")
@@ -169,35 +83,24 @@ with tab1:
         st.write("**Find User**")
         find_user_id = st.number_input("User ID to find", min_value=1, value=1, key="find_user_id")
         if st.button("Find User", key="find_user_btn"):
-            try:
-                response = requests.get(f"{USER_SERVICE_URL}/api/users/{int(find_user_id)}", timeout=5)
-                if response.status_code == 200:
-                    user = response.json()
-                    st.success("✅ User found!")
-                    st.json(user)
-                else:
-                    st.error("❌ User not found")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+            user = next((u for u in st.session_state.users if u['id'] == find_user_id), None)
+            if user:
+                st.success("✅ User found!")
+                st.json(user)
+            else:
+                st.error("❌ User not found")
     
     with col2:
         st.write("**Delete User**")
         delete_user_id = st.number_input("User ID to delete", min_value=1, value=1, key="delete_user_id")
         if st.button("Delete User", key="delete_user_btn"):
-            try:
-                response = requests.delete(f"{USER_SERVICE_URL}/api/users/{int(delete_user_id)}", timeout=5)
-                if response.status_code == 200:
-                    st.success("✅ User deleted successfully!")
-                    st.rerun()
-                else:
-                    st.error("❌ Failed to delete user")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+            st.session_state.users = [u for u in st.session_state.users if u['id'] != delete_user_id]
+            st.success("✅ User deleted successfully!")
+            st.rerun()
 
 with tab2:
     st.header("Orders Management")
-    orders = fetch_orders()
-    display_orders_table(orders)
+    display_orders_table(st.session_state.orders)
     
     # Order actions
     st.subheader("Order Actions")
@@ -207,35 +110,23 @@ with tab2:
         st.write("**Find Order**")
         find_order_id = st.number_input("Order ID to find", min_value=1, value=1, key="find_order_id")
         if st.button("Find Order", key="find_order_btn"):
-            try:
-                response = requests.get(f"{ORDER_SERVICE_URL}/api/orders/{int(find_order_id)}", timeout=5)
-                if response.status_code == 200:
-                    order = response.json()
-                    st.success("✅ Order found!")
-                    st.json(order)
-                else:
-                    st.error("❌ Order not found")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+            order = next((o for o in st.session_state.orders if o['id'] == find_order_id), None)
+            if order:
+                st.success("✅ Order found!")
+                st.json(order)
+            else:
+                st.error("❌ Order not found")
     
     with col2:
         st.write("**User Orders**")
         user_id_for_orders = st.number_input("User ID", min_value=1, value=1, key="user_orders")
         if st.button("Get User Orders"):
-            try:
-                response = requests.get(f"{ORDER_SERVICE_URL}/api/orders/user/{int(user_id_for_orders)}", timeout=5)
-                if response.status_code == 200:
-                    user_orders_data = response.json()
-                    user_orders = user_orders_data.get('orders', [])
-                    if user_orders:
-                        st.success(f"✅ Found {len(user_orders)} orders for user {user_id_for_orders}")
-                        display_orders_table(user_orders)
-                    else:
-                        st.info("No orders found for this user")
-                else:
-                    st.error("Failed to fetch user orders")
-            except Exception as e:
-                st.error(f"❌ Error: {str(e)}")
+            user_orders = [o for o in st.session_state.orders if o['user_id'] == user_id_for_orders]
+            if user_orders:
+                st.success(f"✅ Found {len(user_orders)} orders for user {user_id_for_orders}")
+                display_orders_table(user_orders)
+            else:
+                st.info("No orders found for this user")
 
 with tab3:
     st.header("Create New")
@@ -249,18 +140,15 @@ with tab3:
             email = st.text_input("Email")
             if st.form_submit_button("Create User"):
                 if name and email:
-                    try:
-                        response = requests.post(
-                            f"{USER_SERVICE_URL}/api/users",
-                            json={"name": name, "email": email},
-                            timeout=5
-                        )
-                        if response.status_code == 201:
-                            st.success("✅ User created!")
-                        else:
-                            st.error("Failed to create user")
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
+                    new_user = {
+                        "id": max([u['id'] for u in st.session_state.users], default=0) + 1,
+                        "name": name,
+                        "email": email,
+                        "created_at": datetime.datetime.now().isoformat()
+                    }
+                    st.session_state.users.append(new_user)
+                    st.success("✅ User created!")
+                    st.rerun()
                 else:
                     st.error("Please fill in both name and email")
     
@@ -274,24 +162,18 @@ with tab3:
             status = st.selectbox("Status", ["pending", "completed", "shipped", "cancelled"])
             if st.form_submit_button("Create Order"):
                 if product and amount:
-                    try:
-                        response = requests.post(
-                            f"{ORDER_SERVICE_URL}/api/orders",
-                            json={
-                                "user_id": int(user_id),
-                                "product": product,
-                                "quantity": int(quantity),
-                                "amount": float(amount),
-                                "status": status
-                            },
-                            timeout=5
-                        )
-                        if response.status_code == 201:
-                            st.success("✅ Order created!")
-                        else:
-                            st.error("Failed to create order")
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
+                    new_order = {
+                        "id": max([o['id'] for o in st.session_state.orders], default=0) + 1,
+                        "user_id": int(user_id),
+                        "product": product,
+                        "quantity": int(quantity),
+                        "amount": float(amount),
+                        "status": status,
+                        "created_at": datetime.datetime.now().isoformat()
+                    }
+                    st.session_state.orders.append(new_order)
+                    st.success("✅ Order created!")
+                    st.rerun()
                 else:
                     st.error("Please fill in all fields")
 
@@ -299,5 +181,4 @@ if st.sidebar.button("Refresh Data"):
     st.rerun()
 
 st.sidebar.markdown("---")
-st.sidebar.success("Deployed on Render.com")
-st.sidebar.info("No pandas dependency - faster deployment!")
+st.sidebar.success("Deployed on Render.com - Single App Solution")

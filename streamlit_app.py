@@ -3,9 +3,9 @@ import requests
 import os
 from datetime import datetime
 
-# Configuration - for Docker deployment
-USER_SERVICE_URL = "http://localhost:5001"
-ORDER_SERVICE_URL = "http://localhost:5002"
+# Configuration - Use environment variables for Render
+USER_SERVICE_URL = os.getenv('USER_SERVICE_URL', 'http://localhost:5001')
+ORDER_SERVICE_URL = os.getenv('ORDER_SERVICE_URL', 'http://localhost:5002')
 
 st.set_page_config(
     page_title="Microservices Dashboard",

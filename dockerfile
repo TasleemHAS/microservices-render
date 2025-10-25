@@ -12,6 +12,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all application code
 COPY . .
 
+# Make the start script executable
+RUN chmod +x start.sh
+
 # Expose the port Streamlit runs on
 EXPOSE 8501
 
@@ -19,5 +22,5 @@ EXPOSE 8501
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:8501/ || exit 1
 
-# Start all services
-CMD ["sh", "-c", "python user_service/app.py & python order_service/app.py & streamlit run streamlit_app.py --server.port=8501 --server.address=0.0.0.0"]
+# Use the start script
+CMD ["./start.sh"]

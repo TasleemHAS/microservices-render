@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: microservices-dashboard
+    env: docker
+    plan: free
+    docker:
+      dockerfile: Dockerfile
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: true
+    healthCheckPath: /
+    domains:
+      - microservices-dashboard.onrender.com
